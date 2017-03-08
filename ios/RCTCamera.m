@@ -27,20 +27,6 @@
   BOOL _previousIdleTimerDisabled;
 }
 
-- (void)setOrientation:(NSInteger)orientation
-{
-  [self.manager changeOrientation:orientation];
-
-  if (orientation == RCTCameraOrientationAuto) {
-    [self changePreviewOrientation:[UIApplication sharedApplication].statusBarOrientation];
-    [[NSNotificationCenter defaultCenter] addObserver:self  selector:@selector(orientationChanged:)    name:UIDeviceOrientationDidChangeNotification  object:nil];
-  }
-  else {
-    [[NSNotificationCenter defaultCenter]removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
-    [self changePreviewOrientation:orientation];
-  }
-}
-
 - (void)setOnFocusChanged:(BOOL)enabled
 {
   if (_onFocusChanged != enabled) {
@@ -64,7 +50,7 @@
 
 - (id)initWithManager:(RCTCameraManager*)manager bridge:(RCTBridge *)bridge
 {
-  
+
   if ((self = [super init])) {
     self.manager = manager;
     self.bridge = bridge;
@@ -77,6 +63,7 @@
     _defaultOnFocusComponent = YES;
     _onZoomChanged = NO;
     _previousIdleTimerDisabled = [UIApplication sharedApplication].idleTimerDisabled;
+    [[NSNotificationCenter defaultCenter] addObserver:self  selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification  object:nil];
   }
   return self;
 }
@@ -110,8 +97,9 @@
 }
 
 - (void)orientationChanged:(NSNotification *)notification{
-  UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-  [self changePreviewOrientation:orientation];
+  if (self.manager.previewLayer.connection.isVideoOrientationSupported) {
+    self.manager.previewLayer.connection.videoOrientation = [[UIApplication sharedApplication] statusBarOrientation];
+  }
 }
 
 
@@ -177,15 +165,6 @@
     if (pinchRecognizer.state == UIGestureRecognizerStateChanged) {
         [self.manager zoom:pinchRecognizer.velocity reactTag:self.reactTag];
     }
-}
-
-- (void)changePreviewOrientation:(NSInteger)orientation
-{
-    dispatch_async(self.manager.sessionQueue, ^{
-        if (self.manager.previewLayer.connection.isVideoOrientationSupported) {
-            self.manager.previewLayer.connection.videoOrientation = orientation;
-        }
-    });
 }
 
 @end
