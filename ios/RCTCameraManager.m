@@ -379,6 +379,10 @@ RCT_EXPORT_METHOD(stopCapture) {
   }
 }
 
+RCT_EXPORT_METHOD(isActive:(RCTPromiseResolveBlock)resolve reject:(__unused RCTPromiseRejectBlock)reject) {
+  resolve(@(self.camera != nil));
+}
+
 RCT_EXPORT_METHOD(getFOV:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
   NSArray *devices = [AVCaptureDevice devices];
   AVCaptureDevice *frontCamera;
