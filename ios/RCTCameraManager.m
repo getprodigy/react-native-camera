@@ -461,7 +461,25 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
       });
     }]];
 
-    self.previewLayer.connection.videoOrientation = [[UIApplication sharedApplication] statusBarOrientation];
+    dispatch_async( dispatch_get_main_queue(), ^{
+      /*
+        Why are we dispatching this to the main queue?
+        Because AVCaptureVideoPreviewLayer is the backing layer for AVCamPreviewView and UIView
+        can only be manipulated on the main thread.
+        Note: As an exception to the above rule, it is not necessary to serialize video orientation changes
+        on the AVCaptureVideoPreviewLayer’s connection with other session manipulation.
+
+        Use the status bar orientation as the initial video orientation. Subsequent orientation changes are
+        handled by -[AVCamCameraViewController viewWillTransitionToSize:withTransitionCoordinator:].
+      */
+      UIInterfaceOrientation statusBarOrientation = [UIApplication sharedApplication].statusBarOrientation;
+      AVCaptureVideoOrientation initialVideoOrientation = AVCaptureVideoOrientationPortrait;
+      if ( statusBarOrientation != UIInterfaceOrientationUnknown ) {
+        initialVideoOrientation = (AVCaptureVideoOrientation)statusBarOrientation;
+      }
+
+      self.previewLayer.connection.videoOrientation = initialVideoOrientation;
+    } );
     [self.session startRunning];
   });
 }
@@ -471,7 +489,7 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
   self.camera = nil;
   return;
 #endif
-  dispatch_async(self.sessionQueue, ^{
+  dispatch_async(dispatch_get_main_queue(), ^{
     self.camera = nil;
     [self.previewLayer removeFromSuperlayer];
     [self.session commitConfiguration];
@@ -483,6 +501,7 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
     for(AVCaptureOutput *output in self.session.outputs) {
       [self.session removeOutput:output];
     }
+    self.session = nil;
   });
 }
 
