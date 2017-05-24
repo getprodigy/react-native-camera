@@ -192,7 +192,7 @@ RCT_CUSTOM_VIEW_PROPERTY(type, NSInteger, RCTCamera) {
 
   self.presetCamera = type;
   if (self.session.isRunning) {
-    dispatch_async(self.sessionQueue, ^{
+    dispatch_async(dispatch_get_main_queue(), ^{
       AVCaptureDevice *currentCaptureDevice = [self.videoCaptureDeviceInput device];
       AVCaptureDevicePosition position = (AVCaptureDevicePosition)type;
       AVCaptureDevice *captureDevice = [self deviceWithMediaType:AVMediaTypeVideo preferringPosition:(AVCaptureDevicePosition)position];
@@ -424,7 +424,7 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
 #if TARGET_IPHONE_SIMULATOR
   return;
 #endif
-  dispatch_async(self.sessionQueue, ^{
+  dispatch_async(dispatch_get_main_queue(), ^{
     if (self.presetCamera == AVCaptureDevicePositionUnspecified) {
       self.presetCamera = AVCaptureDevicePositionBack;
     }
@@ -455,13 +455,13 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
     __weak RCTCameraManager *weakSelf = self;
     [self setRuntimeErrorHandlingObserver:[NSNotificationCenter.defaultCenter addObserverForName:AVCaptureSessionRuntimeErrorNotification object:self.session queue:nil usingBlock:^(NSNotification *note) {
       RCTCameraManager *strongSelf = weakSelf;
-      dispatch_async(strongSelf.sessionQueue, ^{
+      dispatch_async(dispatch_get_main_queue(), ^{
         // Manually restarting the session since it must have been stopped due to an error.
         [strongSelf.session startRunning];
       });
     }]];
 
-    dispatch_async( dispatch_get_main_queue(), ^{
+    dispatch_async(dispatch_get_main_queue(), ^{
       /*
         Why are we dispatching this to the main queue?
         Because AVCaptureVideoPreviewLayer is the backing layer for AVCamPreviewView and UIView
@@ -506,7 +506,7 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
 }
 
 - (void)initializeCaptureSessionInput:(NSString *)type {
-  dispatch_async(self.sessionQueue, ^{
+  dispatch_async(dispatch_get_main_queue(), ^{
     if (type == AVMediaTypeAudio) {
       for (AVCaptureDeviceInput* input in [self.session inputs]) {
         if ([input.device hasMediaType:AVMediaTypeAudio]) {
@@ -578,7 +578,7 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
 
 - (void)captureStill:(NSInteger)target options:(NSDictionary *)options orientation:(AVCaptureVideoOrientation)orientation resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
-  dispatch_async(self.sessionQueue, ^{
+  dispatch_async(dispatch_get_main_queue(), ^{
 #if TARGET_IPHONE_SIMULATOR
       CGSize size = CGSizeMake(720, 1280);
       UIGraphicsBeginImageContextWithOptions(size, YES, 0);
