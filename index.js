@@ -127,7 +127,6 @@ export default class Camera extends Component {
     defaultOnFocusComponent: true,
     flashMode: CameraManager.FlashMode.off,
     playSoundOnCapture: true,
-    torchMode: CameraManager.TorchMode.off,
     mirrorImage: false,
     barCodeTypes: Object.values(CameraManager.BarCodeType),
   };
