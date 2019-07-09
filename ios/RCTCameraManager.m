@@ -1,6 +1,7 @@
 #import "RCTCameraManager.h"
 #import "RCTCamera.h"
 #import <React/RCTBridge.h>
+#import <React/RCTComponentEvent.h>
 #import <React/RCTEventDispatcher.h>
 #import <React/RCTUtils.h>
 #import <React/RCTLog.h>
@@ -1025,13 +1026,14 @@ didFinishRecordingToOutputFileAtURL:(NSURL *)outputFileURL
             zoomFactor = 1.0f;
         }
 
-        NSDictionary *event = @{
-          @"target": reactTag,
+        NSDictionary *body = @{
           @"zoomFactor": [NSNumber numberWithDouble:zoomFactor],
           @"velocity": [NSNumber numberWithDouble:velocity]
         };
-
-        [self.bridge.eventDispatcher sendInputEventWithName:@"zoomChanged" body:event];
+        RCTComponentEvent *event = [[RCTComponentEvent alloc] initWithName:@"zoomChanged"
+                                                              viewTag:reactTag
+                                                              body:body];
+        [self.bridge.eventDispatcher sendEvent:event];
 
         device.videoZoomFactor = zoomFactor;
         [device unlockForConfiguration];

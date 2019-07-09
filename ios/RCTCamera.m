@@ -1,4 +1,5 @@
 #import <React/RCTBridge.h>
+#import <React/RCTComponentEvent.h>
 #import "RCTCamera.h"
 #import "RCTCameraManager.h"
 #import <React/RCTLog.h>
@@ -129,14 +130,16 @@
         {
             [self.camFocus removeFromSuperview];
         }
-        NSDictionary *event = @{
-          @"target": self.reactTag,
+        NSDictionary *body = @{
           @"touchPoint": @{
             @"x": [NSNumber numberWithDouble:touchPoint.x],
             @"y": [NSNumber numberWithDouble:touchPoint.y]
           }
         };
-        [self.bridge.eventDispatcher sendInputEventWithName:@"focusChanged" body:event];
+        RCTComponentEvent *event = [[RCTComponentEvent alloc] initWithName:@"focusChanged"
+                                                              viewTag:self.reactTag
+                                                              body:body];
+        [self.bridge.eventDispatcher sendEvent:event];
 
         // Show animated rectangle on the touched area
         if (_defaultOnFocusComponent) {
