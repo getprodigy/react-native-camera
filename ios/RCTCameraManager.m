@@ -579,27 +579,35 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
 - (void)captureStill:(NSInteger)target options:(NSDictionary *)options orientation:(AVCaptureVideoOrientation)orientation resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   dispatch_async(dispatch_get_main_queue(), ^{
+      BOOL grayscale = [[options valueForKey:@"grayscale"] boolValue];
 #if TARGET_IPHONE_SIMULATOR
       CGSize size = CGSizeMake(720, 1280);
       UIGraphicsBeginImageContextWithOptions(size, YES, 0);
-          // Thanks https://gist.github.com/kylefox/1689973
+      // Thanks https://gist.github.com/kylefox/1689973
+      UIColor *color;
+      
+      if (grayscale) {
+          color = [UIColor blackColor];
+      } else {
           CGFloat hue = ( arc4random() % 256 / 256.0 );  //  0.0 to 1.0
           CGFloat saturation = ( arc4random() % 128 / 256.0 ) + 0.5;  //  0.5 to 1.0, away from white
           CGFloat brightness = ( arc4random() % 128 / 256.0 ) + 0.5;  //  0.5 to 1.0, away from black
-          UIColor *color = [UIColor colorWithHue:hue saturation:saturation brightness:brightness alpha:1];
-          [color setFill];
-          UIRectFill(CGRectMake(0, 0, size.width, size.height));
-          NSDate *currentDate = [NSDate date];
-          NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-          [dateFormatter setDateFormat:@"dd.MM.YY HH:mm:ss"];
-          NSString *text = [dateFormatter stringFromDate:currentDate];
-          UIFont *font = [UIFont systemFontOfSize:40.0];
-          NSDictionary *attributes = [NSDictionary dictionaryWithObjects:
-                                      @[font, [UIColor blackColor]]
-                                                                 forKeys:
-                                      @[NSFontAttributeName, NSForegroundColorAttributeName]];
-          [text drawAtPoint:CGPointMake(size.width/3, size.height/2) withAttributes:attributes];
-          UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+          color = [UIColor colorWithHue:hue saturation:saturation brightness:brightness alpha:1];
+      }
+      
+      [color setFill];
+      UIRectFill(CGRectMake(0, 0, size.width, size.height));
+      NSDate *currentDate = [NSDate date];
+      NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+      [dateFormatter setDateFormat:@"dd.MM.YY HH:mm:ss"];
+      NSString *text = [dateFormatter stringFromDate:currentDate];
+      UIFont *font = [UIFont systemFontOfSize:40.0];
+      NSDictionary *attributes = [NSDictionary dictionaryWithObjects:
+                                  @[font, [UIColor blackColor]]
+                                                             forKeys:
+                                  @[NSFontAttributeName, NSForegroundColorAttributeName]];
+      [text drawAtPoint:CGPointMake(size.width/3, size.height/2) withAttributes:attributes];
+      UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
       UIGraphicsEndImageContext();
 
       NSData *imageData = UIImageJPEGRepresentation(image, 1.0);
@@ -621,6 +629,27 @@ RCT_EXPORT_METHOD(hasFlash:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRej
             // create cgimage
             CGImageRef CGImage;
             CGImage = CGImageSourceCreateImageAtIndex(source, 0, NULL);
+              
+            if (grayscale) {
+                // Create image rectangle with current image width/height
+                CGRect imageRect = CGRectMake(0, 0, CGImageGetWidth(CGImage), CGImageGetHeight(CGImage));
+                
+                // Grayscale color space
+                CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceGray();
+                
+                // Create bitmap content with current image size and grayscale colorspace
+                CGContextRef context = CGBitmapContextCreate(nil, CGImageGetWidth(CGImage), CGImageGetHeight(CGImage), 8, 0, colorSpace, kCGImageAlphaNone);
+                
+                // Draw image into current context, with specified rectangle
+                // using previously defined context (with grayscale colorspace)
+                CGContextDrawImage(context, imageRect, CGImage);
+                
+                // Create bitmap image info from pixel data in current context
+                CGImage = CGBitmapContextCreateImage(context);
+                
+                CGColorSpaceRelease(colorSpace);
+                CGContextRelease(context);
+            }
 
             // Rotate it
             CGImageRef rotatedCGImage;
